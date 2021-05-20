@@ -13,11 +13,11 @@ streamlit run app.py
 ```
 После чего откроется приложение:
 
-![alt text](https://github.com/nickuzmenkov/arc/blob/main/app_1.png?raw=true)
+![alt text](https://github.com/nickuzmenkov/arc/blob/main/assets/img/app_1.png?raw=true)
 
 В полях слева необходимо ввести штатное число Рейнольдса и прочие ограничения, налагаемые на теплообменный аппарат. При нажатии на кнопку "ОК" в базе данных будет найдена запись, соответствующая наиболее эффективной конфигурации шероховатости для данного случая:
 
-![alt text](https://github.com/nickuzmenkov/arc/blob/main/app_2.png?raw=true)
+![alt text](https://github.com/nickuzmenkov/arc/blob/main/assets/img/app_2.png?raw=true)
 
 В случае, если введенным требованиям нельзя удовлетворить (например, минимальный рост теплоотдачи - 2 раза, максимальный рост сопротивления - 1.1 раза), высветится сообщение об ошибке.
 
