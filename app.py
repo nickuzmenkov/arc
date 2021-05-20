@@ -1,27 +1,25 @@
 import streamlit as st
 import pandas as pd
+import sqlite3
 
 
-@st.cache
-def load_df():
-    return pd.read_csv('./data.csv')
+def select(r, min_nu, max_xi, min_pf):
+    connect = sqlite3.connect('assets/db/arc.db')
+    query = f'''
+        SELECT *
+        FROM data
+        WHERE reynolds = {r} AND
+            nusselt >= {min_nu} AND
+            friction <= {max_xi} AND
+            performance <= {1 / min_pf};'''
+    df = pd.read_sql_query(query, connect).set_index('id')
+    connect.close()
+    return df
 
 
-def search(df, r, min_nu=None, max_xi=None, min_pf=None):
-    # direct comparison returns False even for equal numbers
-    df = df[round(df['Reynolds'] - r) == 0]
-
-    if min_nu is not None:
-        df = df[df['Nusselt'] >= min_nu]
-
-    if max_xi is not None:
-        df = df[df['Cf'] <= max_xi]
-
-    if min_pf is not None:
-        df = df[1. / df['Performance'] >= min_pf]
-
+def search(df):
     if len(df) > 0:
-        return df.index[df['Performance'] == df['Performance'].min()]
+        return df.index[df['performance'] == df['performance'].min()]
     else:
         return None
 
@@ -42,26 +40,25 @@ if st.sidebar.checkbox('Ограничить рост теплоотдачи'):
         'Минимальный рост теплоотдачи',
         1., 2.2, 1., .1)
 else:
-    min_nu = None
+    min_nu = 1.
 
 if st.sidebar.checkbox('Ограничить рост сопротивления'):
     max_cf = st.sidebar.slider(
         'Максимальный рост гидравлического сопротивления',
         1., 10., 10., .5)
 else:
-    max_cf = None
+    max_cf = 10.
 
 if st.sidebar.checkbox('Ограничить габариты'):
     min_pf = st.sidebar.slider(
         'Минимальное снижение габаритов',
         1., 2., 1., .1)
 else:
-    min_pf = None
+    min_pf = 1.
 
 if st.sidebar.button('OK'):
-    df = load_df()
-
-    index = search(df, r, min_nu, max_cf, min_pf)
+    df = select(r, min_nu, max_cf, min_pf)
+    index = search(df)
 
     if index is not None:
 
@@ -70,13 +67,13 @@ if st.sidebar.button('OK'):
             1: '**треугольного профиля, скошенных по потоку**',
             2: '**треугольного профиля, скошенных против потока**'}
 
-        row = df.loc[index].values.tolist()[0]
+        row = df.loc[index]
         st.header(
-            f'Возможно снижение габаритов в {1. / row[-1]:.2f} раз(а)')
+            f'Возможно снижение габаритов в {1. / float(row["performance"]):.2f} раз(а)')
         st.write(
-            f'При росте теплоотдачи в {row[4]:.2f} раз(а) и сопротивления в {row[5]:.2f} раз(а).')
+            f'При росте теплоотдачи в {float(row["nusselt"]):.2f} раз(а) и сопротивления в {float(row["friction"]):.2f} раз(а).')
         st.write(
-            f'При использовании искусственной шероховатости в виде выступов {form_dict[row[0]]} с параметрами: h/d={row[1]:.2f}, p/d={row[2]:.2f}.')
+            f'При использовании искусственной шероховатости в виде выступов {form_dict[int(row["type"])]} с параметрами: h/d={float(row["height"]):.2f}, p/d={float(row["pitch"]):.2f}.')
     else:
         st.header('Ошибка')
         st.write('Поиск с данными ограничениями вернул пустое множество. Попробуйте ослабить или убрать некоторые ограничения и повторите поиск.')
